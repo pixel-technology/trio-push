@@ -1,6 +1,6 @@
 {
   "name": "@triochat/trio-push",
-  "version": "0.1.4",
+  "version": "0.0.1",
   "description": "Official JavaScript/TypeScript SDK for TrioChat APIs",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
