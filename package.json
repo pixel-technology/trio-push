@@ -1,6 +1,6 @@
 {
   "name": "@triochat/trio-push",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Official JavaScript/TypeScript SDK for TrioChat APIs",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -30,6 +30,9 @@
     "api",
     "typescript"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "TrioChat",
   "license": "MIT",
   "packageManager": "pnpm@10.30.2",
