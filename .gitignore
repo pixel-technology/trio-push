@@ -1,0 +1,78 @@
+# =========================
+# Dependencies
+# =========================
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Build outputs
+# =========================
+dist/
+coverage/
+*.tsbuildinfo
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# npm auth (never commit)
+.npmrc
+
+# =========================
+# Generated artifacts
+# =========================
+# If OpenAPI spec is fetched/generated at build time, ignore local copies
+openapi.json
+
+# If you ever snapshot generated SDK output elsewhere
+generated-temp/
+tmp/
+
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Test artifacts
+# =========================
+junit.xml
+playwright-report/
+test-results/
+
+# =========================
+# Cache folders
+# =========================
+.cache/
+.eslintcache
+.turbo/
+.nx/
+
+# =========================
+# Misc
+# =========================
+*.tgz
+*.bak
+*.tmp
