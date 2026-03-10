@@ -23,7 +23,7 @@ Send push notifications, manage devices, and integrate with TrioChat — all wit
 - 🔒 **TypeScript first** — full type definitions out of the box
 - 📱 **Multi-platform** — iOS, Android, and Web support
 - ⚡ **Simple API** — register devices and fire notifications in minutes
-- 🌐 **Universal** — runs in React Native, browsers, and Node.js
+- 🌐 **Universal** — runs in React Native, Node.js, NestJS, Express, Bun, Deno, and browsers
 
 ---
 
@@ -75,7 +75,10 @@ new TrioChatNotificationClient(config: TrioChatNotificationClientConfig)
 > Use this in your **React Native**, mobile, or web frontend to register the user's device when the app launches.
 
 ```typescript
-import { TrioChatNotificationClient } from "@triochat/trio-push";
+import {
+  TrioChatNotificationClient,
+  TrioPushPlatform,
+} from "@triochat/trio-push";
 
 const client = new TrioChatNotificationClient({
   token: "your-api-token", // 👉 Generate at https://app.triochat.io/
@@ -84,7 +87,7 @@ const client = new TrioChatNotificationClient({
 // Call this after getting the FCM token from Firebase
 await client.registerDevice({
   fcm_token: "firebase-device-token",
-  platform: "ios", // 'ios' | 'android' | 'web'
+  platform: TrioPushPlatform.IOS, // TrioPushPlatform.IOS | .ANDROID | .WEB
   metadata: { app_version: "1.0.0" },
 });
 ```
@@ -95,10 +98,13 @@ await client.registerDevice({
 import messaging from "@react-native-firebase/messaging";
 import { Platform } from "react-native";
 import DeviceInfo from "react-native-device-info";
-import { TrioChatNotificationClient } from "@triochat/trio-push";
+import {
+  TrioChatNotificationClient,
+  TrioPushPlatform,
+} from "@triochat/trio-push";
 
 const client = new TrioChatNotificationClient({
-  token: userAuthToken, // 👉 Token generated from https://app.triochat.io/
+  token: userAuthToken, // 👉 Generate at https://app.triochat.io/
 });
 
 async function registerDeviceForPush() {
@@ -111,7 +117,8 @@ async function registerDeviceForPush() {
   // Register it with TrioChat
   const response = await client.registerDevice({
     fcm_token: fcmToken,
-    platform: Platform.OS === "ios" ? "ios" : "android",
+    platform:
+      Platform.OS === "ios" ? TrioPushPlatform.IOS : TrioPushPlatform.ANDROID,
     metadata: {
       app_version: "2.0.0",
       device_model: DeviceInfo.getModel(),
@@ -131,10 +138,13 @@ useEffect(() => {
 
 ```typescript
 import { getToken } from "firebase/messaging";
-import { TrioChatNotificationClient } from "@triochat/trio-push";
+import {
+  TrioChatNotificationClient,
+  TrioPushPlatform,
+} from "@triochat/trio-push";
 
 const client = new TrioChatNotificationClient({
-  token: userAuthToken, // 👉 Token generated from https://app.triochat.io/
+  token: userAuthToken, // 👉 Generate at https://app.triochat.io/
 });
 
 async function registerWebDevice() {
@@ -147,7 +157,7 @@ async function registerWebDevice() {
 
   await client.registerDevice({
     fcm_token: fcmToken,
-    platform: "web",
+    platform: TrioPushPlatform.WEB,
     metadata: { browser: navigator.userAgent },
   });
 
@@ -157,7 +167,7 @@ async function registerWebDevice() {
 
 ---
 
-## 🖥️ Backend Usage (Node.js)
+## 🖥️ Backend Usage (Node.js / NestJS / Express)
 
 > Use this in your **server** to fetch devices and send notifications. Keep your token server-side only — never expose it in client app bundles.
 
@@ -172,10 +182,20 @@ const client = new TrioChatNotificationClient({
 ### Get All Devices
 
 ```typescript
-const { devices, total } = await client.getDevices();
+// Returns Device[] directly — clean and iterable
+const devices = await client.getDevices();
+
+const userDevice = devices.find(
+  (device) => device.metadata?.user_id === userId,
+);
+```
+
+If you also need the total count, use `getDevicesWithMeta()`:
+
+```typescript
+const { devices, total } = await client.getDevicesWithMeta();
 
 console.log(`📊 Total registered devices: ${total}`);
-
 devices.forEach((device) => {
   console.log(`[${device.platform}] ${device.id} — user: ${device.user_id}`);
 });
@@ -237,11 +257,11 @@ client.setToken("new-jwt-token");
 
 ### `registerDevice(data)` — 📱 Client
 
-| Field       | Type                          | Required | Description                               |
-| ----------- | ----------------------------- | :------: | ----------------------------------------- |
-| `fcm_token` | `string`                      |    ✅    | FCM token from Firebase                   |
-| `platform`  | `'ios' \| 'android' \| 'web'` |    ✅    | Device platform                           |
-| `metadata`  | `Record<string, any>`         |    ❌    | Any extra info (app version, model, etc.) |
+| Field       | Type                  | Required | Description                               |
+| ----------- | --------------------- | :------: | ----------------------------------------- |
+| `fcm_token` | `string`              |    ✅    | FCM token from Firebase                   |
+| `platform`  | `TrioPushPlatform`    |    ✅    | Device platform                           |
+| `metadata`  | `Record<string, any>` |    ❌    | Any extra info (app version, model, etc.) |
 
 **Returns:** `{ message: string, device_id?: string }`
 
@@ -249,7 +269,13 @@ client.setToken("new-jwt-token");
 
 ### `getDevices()` — 🖥️ Backend
 
-**Returns:** `{ devices: Device[], total: number }`
+**Returns:** `Device[]` — array of devices, directly iterable.
+
+---
+
+### `getDevicesWithMeta()` — 🖥️ Backend
+
+**Returns:** `{ devices: Device[], total: number }` — use when you need the total count.
 
 ---
 
@@ -279,15 +305,15 @@ client.setToken("new-jwt-token");
 All failures throw a `TrioPushError`:
 
 ```typescript
-import { TrioPushError } from '@triochat/trio-push';
+import { TrioPushError } from "@triochat/trio-push";
 
 try {
   await client.sendNotification({ ... });
 } catch (error) {
   if (error instanceof TrioPushError) {
-    console.error('❌ Status:',   error.statusCode);  // e.g. 401, 404
-    console.error('💬 Message:',  error.message);
-    console.error('📦 Response:', error.response);
+    console.error("❌ Status:",   error.statusCode);  // e.g. 401, 404
+    console.error("💬 Message:",  error.message);
+    console.error("📦 Response:", error.response);
   }
 }
 ```
@@ -306,9 +332,8 @@ try {
 ### 🔔 Notify a User Across All Their Devices
 
 ```typescript
-// Backend: look up all devices for a user then ping them all
 async function notifyUser(userId: string, title: string, body: string) {
-  const { devices } = await client.getDevices();
+  const devices = await client.getDevices();
 
   const userDeviceIds = devices
     .filter((d) => d.user_id === userId)
@@ -334,10 +359,10 @@ async function notifyUser(userId: string, title: string, body: string) {
 
 ```typescript
 async function notifyIOSUsers(title: string, body: string) {
-  const { devices } = await client.getDevices();
+  const devices = await client.getDevices();
 
   const iosDeviceIds = devices
-    .filter((d) => d.platform === "ios")
+    .filter((d) => d.platform === TrioPushPlatform.IOS)
     .map((d) => d.id);
 
   await client.sendNotification({
@@ -353,7 +378,6 @@ async function notifyIOSUsers(title: string, body: string) {
 ### 💬 New Chat Message Notification
 
 ```typescript
-// Trigger this from your message handler on the backend
 async function onNewMessage(
   chatId: string,
   senderName: string,
@@ -401,22 +425,41 @@ Full types are exported and ready to use:
 
 ```typescript
 import type {
-  RegisterDeviceDto,
-  SendNotificationDto,
-  NotificationPayloadDto,
+  RegisterDeviceInput,
+  SendNotificationInput,
+  NotificationPayload,
   Device,
   GetDevicesResponse,
   SendNotificationResponse,
+  TrioChatNotificationClientConfig,
+  TrioPushPlatformType,
 } from "@triochat/trio-push";
 
 // Platform enum
-import { RegisterDevicePlatformEnum } from "@triochat/trio-push";
+import { TrioPushPlatform } from "@triochat/trio-push";
 
 await client.registerDevice({
   fcm_token: "token",
-  platform: RegisterDevicePlatformEnum.platform.IOS,
+  platform: TrioPushPlatform.IOS, // TrioPushPlatform.IOS | .ANDROID | .WEB
 });
 ```
+
+**Available exports:**
+
+| Export                             | Kind  | Description                          |
+| ---------------------------------- | ----- | ------------------------------------ |
+| `TrioChatNotificationClient`       | class | Main client                          |
+| `TrioPushError`                    | class | Error class                          |
+| `TrioPushPlatform`                 | const | `{ IOS, ANDROID, WEB }`              |
+| `TrioPushPlatformType`             | type  | Union type of platform values        |
+| `RegisterDeviceInput`              | type  | Input for `registerDevice()`         |
+| `SendNotificationInput`            | type  | Input for `sendNotification()`       |
+| `NotificationPayload`              | type  | Notification title/body shape        |
+| `Device`                           | type  | Device object shape                  |
+| `RegisterDeviceResponse`           | type  | Response from `registerDevice()`     |
+| `SendNotificationResponse`         | type  | Response from `sendNotification()`   |
+| `GetDevicesResponse`               | type  | Response from `getDevicesWithMeta()` |
+| `TrioChatNotificationClientConfig` | type  | Constructor config shape             |
 
 ---
 
@@ -424,7 +467,7 @@ await client.registerDevice({
 
 1. 🔑 **Keep backend tokens secret** — your token is generated from [app.triochat.io](https://app.triochat.io/) and should only ever live on your server via an env variable (e.g. `TRIO_PUSH_TOKEN`), never in client app bundles
 2. 📱 **Register on every app launch** — FCM tokens can rotate, so always call `registerDevice` when the app starts or the user logs in
-3. 🏷️ **Use metadata** — store `app_version`, `locale`, `device_model`, etc. to help with targeting and debugging
+3. 🏷️ **Use metadata** — store `app_version`, `locale`, `device_model`, `user_id`, etc. to help with targeting and debugging
 4. 📦 **Batch your sends** — always pass multiple `device_ids` in one call rather than looping
 5. 🛡️ **Always handle errors** — wrap calls in `try/catch` and check `error instanceof TrioPushError`
 
@@ -453,4 +496,3 @@ MIT © [TrioChat](https://triochat.com)
 Made with ❤️ by the TrioChat team
 
 </div>
-# -triochat-trio-push

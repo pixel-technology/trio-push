@@ -206,8 +206,13 @@ export class TrioChatNotificationClient {
    * });
    * ```
    */
-  async getDevices(): Promise<GetDevicesResponse> {
-    return this.request<GetDevicesResponse>("GET", "/api/devices");
+  // Change the return type
+  async getDevices(): Promise<Device[]> {
+    const response = await this.request<GetDevicesResponse>(
+      "GET",
+      "/api/devices",
+    );
+    return response.devices; // unwrap here
   }
 
   /**
