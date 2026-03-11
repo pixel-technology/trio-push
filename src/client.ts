@@ -365,7 +365,7 @@ export class TrioChatNotificationClient {
 
     this.baseUrl = isDev
       ? "https://triochat-push.onrender.com"
-      : "https://triochat-push.onrender.com";
+      : "https://triochat-backend-push.onrender.com";
   }
 
   // ─────────────────────────────────────────────
